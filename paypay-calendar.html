@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PayPay家計カレンダー</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#F7F2E7;
+    --paper-2:#FBF8F1;
+    --ink:#2A2B2E;
+    --ink-soft:#5B5A55;
+    --red:#E8002D;
+    --red-soft:#FDE3E3;
+    --brown:#8B6F47;
+    --brown-line:#DDD2BC;
+    --green:#6E8C5E;
+    --wisteria:#9C93AE;
+    --gold:#B98A2E;
+    --shadow: 0 2px 10px rgba(42,43,46,0.08);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+  }
+  .app{
+    max-width:520px;
+    margin:0 auto;
+    padding:20px 14px 60px;
+  }
+  /* ---------- Header ---------- */
+  header{
+    text-align:center;
+    padding-bottom:10px;
+  }
+  .app-title{
+    font-family:'Shippori Mincho', serif;
+    font-weight:700;
+    font-size:22px;
+    letter-spacing:.06em;
+    margin:0 0 2px;
+  }
+  .app-sub{
+    font-size:11px;
+    color:var(--ink-soft);
+    letter-spacing:.08em;
+  }
+  .month-nav{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:18px;
+    margin:18px 0 6px;
+  }
+  .month-nav button{
+    background:none;
+    border:1px solid var(--brown-line);
+    color:var(--brown);
+    width:34px;height:34px;
+    border-radius:50%;
+    font-size:16px;
+    cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+    transition:background .15s;
+  }
+  .month-nav button:hover{background:var(--paper-2);}
+  .month-label{
+    font-family:'Shippori Mincho', serif;
+    font-size:19px;
+    font-weight:700;
+    min-width:130px;
+    text-align:center;
+  }
+  /* ---------- Monthly Stamp ---------- */
+  .stamp-row{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:14px;
+    margin:14px 0 8px;
+  }
+  .stamp{
+    width:104px;height:104px;
+    border-radius:50%;
+    border:3px solid var(--red);
+    color:var(--red);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    transform:rotate(-6deg);
+    font-family:'Shippori Mincho', serif;
+    flex-shrink:0;
+    position:relative;
+  }
+  .stamp::before{
+    content:'';
+    position:absolute;
+    inset:6px;
+    border:1px solid var(--red);
+    border-radius:50%;
+    opacity:.5;
+  }
+  .stamp .stamp-label{
+    font-size:10px;
+    letter-spacing:.15em;
+    margin-bottom:2px;
+  }
+  .stamp .stamp-amount{
+    font-size:19px;
+    font-weight:700;
+    font-variant-numeric:tabular-nums;
+    letter-spacing:0;
+  }
+  .cat-breakdown{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+    min-width:0;
+  }
+  .cat-bar-row{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    font-size:11px;
+  }
+  .cat-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+  .cat-bar-track{
+    flex:1;
+    background:var(--paper-2);
+    border-radius:4px;
+    height:6px;
+    overflow:hidden;
+  }
+  .cat-bar-fill{height:100%;border-radius:4px;}
+  .cat-bar-amount{
+    font-variant-numeric:tabular-nums;
+    color:var(--ink-soft);
+    min-width:52px;
+    text-align:right;
+  }
+  .cat-empty{
+    font-size:12px;
+    color:var(--ink-soft);
+    text-align:center;
+    padding:10px 0;
+  }
+  /* ---------- Tabs ---------- */
+  .tabs{
+    display:flex;
+    gap:6px;
+    margin:22px 0 10px;
+    border-bottom:1px solid var(--brown-line);
+  }
+  .tab-btn{
+    flex:1;
+    background:none;
+    border:none;
+    padding:10px 4px;
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    font-size:13px;
+    font-weight:700;
+    color:var(--ink-soft);
+    cursor:pointer;
+    border-bottom:2px solid transparent;
+    margin-bottom:-1px;
+  }
+  .tab-btn.active{
+    color:var(--red);
+    border-bottom-color:var(--red);
+  }
+  .panel{display:none;}
+  .panel.active{display:block;}
+
+  /* ---------- Calendar ---------- */
+  .weekday-row{
+    display:grid;
+    grid-template-columns:repeat(7,1fr);
+    text-align:center;
+    font-size:11px;
+    color:var(--ink-soft);
+    margin-top:4px;
+    margin-bottom:4px;
+  }
+  .weekday-row span:first-child{color:var(--red);}
+  .weekday-row span:last-child{color:var(--wisteria);}
+  .cal-grid{
+    display:grid;
+    grid-template-columns:repeat(7,1fr);
+    gap:4px;
+  }
+  .day-cell{
+    aspect-ratio:1/1;
+    background:var(--paper-2);
+    border:1px solid var(--brown-line);
+    border-radius:6px;
+    padding:4px 5px;
+    display:flex;
+    flex-direction:column;
+    justify-content:space-between;
+    cursor:pointer;
+    position:relative;
+    transition:transform .1s, box-shadow .1s;
+  }
+  .day-cell:active{transform:scale(0.96);}
+  .day-cell.empty{
+    background:transparent;
+    border-color:transparent;
+    cursor:default;
+  }
+  .day-cell.today{
+    background:#EFF3EA;
+    border-color:var(--green);
+  }
+  .day-num{
+    font-family:'Shippori Mincho', serif;
+    font-size:12px;
+    color:var(--ink-soft);
+  }
+  .today .day-num{color:var(--green); font-weight:700;}
+  .day-cell.sun .day-num{color:var(--red);}
+  .day-cell.sat .day-num{color:var(--wisteria);}
+  .day-total-tab{
+    align-self:flex-end;
+    background:var(--red);
+    color:#fff;
+    font-size:10px;
+    font-weight:700;
+    padding:1px 5px;
+    border-radius:8px 3px 8px 3px;
+    font-variant-numeric:tabular-nums;
+    max-width:100%;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+  /* ---------- FAB / quick add ---------- */
+  .fab{
+    position:fixed;
+    right:20px;
+    bottom:26px;
+    width:56px;height:56px;
+    border-radius:50%;
+    background:var(--red);
+    color:#fff;
+    border:none;
+    font-size:26px;
+    box-shadow:0 4px 14px rgba(232,0,45,0.4);
+    cursor:pointer;
+    z-index:40;
+    display:flex;align-items:center;justify-content:center;
+  }
+  /* ---------- Modal ---------- */
+  .overlay{
+    display:none;
+    position:fixed;inset:0;
+    background:rgba(42,43,46,0.45);
+    z-index:50;
+    align-items:flex-end;
+    justify-content:center;
+  }
+  .overlay.active{display:flex;}
+  .sheet{
+    background:var(--paper);
+    width:100%;
+    max-width:520px;
+    border-radius:16px 16px 0 0;
+    padding:18px 18px 26px;
+    max-height:85vh;
+    overflow-y:auto;
+    animation:slideUp .2s ease-out;
+  }
+  @keyframes slideUp{from{transform:translateY(30px);opacity:0;}to{transform:translateY(0);opacity:1;}}
+  .sheet-handle{
+    width:40px;height:4px;background:var(--brown-line);
+    border-radius:2px;margin:0 auto 14px;
+  }
+  .sheet-title{
+    font-family:'Shippori Mincho', serif;
+    font-size:17px;
+    font-weight:700;
+    margin:0 0 4px;
+    display:flex;align-items:baseline;justify-content:space-between;
+  }
+  .sheet-day-total{
+    font-size:13px;color:var(--red);font-weight:700;
+    font-variant-numeric:tabular-nums;
+  }
+  .entry-list{margin:14px 0;display:flex;flex-direction:column;gap:8px;}
+  .entry-item{
+    display:flex;align-items:center;gap:10px;
+    background:var(--paper-2);
+    border:1px solid var(--brown-line);
+    border-radius:8px;
+    padding:9px 10px;
+  }
+  .entry-cat-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+  .entry-info{flex:1;min-width:0;}
+  .entry-memo{font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .entry-cat{font-size:10px;color:var(--ink-soft);}
+  .entry-amount{
+    font-weight:700;font-variant-numeric:tabular-nums;font-size:14px;
+    white-space:nowrap;
+  }
+  .entry-del{
+    background:none;border:none;color:var(--wisteria);
+    font-size:16px;cursor:pointer;padding:2px 4px;
+  }
+  .empty-note{font-size:12px;color:var(--ink-soft);text-align:center;padding:14px 0;}
+
+  .add-form{
+    border-top:1px dashed var(--brown-line);
+    padding-top:14px;
+    display:flex;flex-direction:column;gap:10px;
+  }
+  .field label{
+    font-size:11px;color:var(--ink-soft);display:block;margin-bottom:4px;
+    letter-spacing:.04em;
+  }
+  .field input[type=number], .field input[type=text]{
+    width:100%;
+    border:1px solid var(--brown-line);
+    background:#fff;
+    border-radius:8px;
+    padding:9px 10px;
+    font-size:15px;
+    font-family:'Zen Kaku Gothic New', sans-serif;
+  }
+  .field input:focus{outline:2px solid var(--red); outline-offset:1px;}
+  .cat-chips{display:flex;flex-wrap:wrap;gap:6px;}
+  .chip{
+    border:1px solid var(--brown-line);
+    background:#fff;
+    border-radius:16px;
+    padding:6px 12px;
+    font-size:12px;
+    cursor:pointer;
+    display:flex;align-items:center;gap:5px;
+  }
+  .chip .cat-dot{width:8px;height:8px;}
+  .chip.selected{
+    background:var(--ink);
+    border-color:var(--ink);
+    color:#fff;
+  }
+  .submit-btn{
+    background:var(--red);
+    color:#fff;
+    border:none;
+    border-radius:10px;
+    padding:12px;
+    font-size:14px;
+    font-weight:700;
+    cursor:pointer;
+    margin-top:4px;
+  }
+  .submit-btn:disabled{background:var(--brown-line);cursor:not-allowed;}
+  .close-btn{
+    position:absolute;top:16px;right:16px;
+    background:none;border:none;font-size:18px;color:var(--ink-soft);cursor:pointer;
+  }
+
+  /* ---------- CSV import panel ---------- */
+  .import-box{
+    background:var(--paper-2);
+    border:1px dashed var(--brown-line);
+    border-radius:10px;
+    padding:20px 16px;
+    text-align:center;
+  }
+  .import-box p{font-size:13px;color:var(--ink-soft);line-height:1.7;margin:0 0 12px;}
+  .import-box input[type=file]{display:none;}
+  .file-label{
+    display:inline-block;
+    background:var(--ink);
+    color:#fff;
+    padding:9px 18px;
+    border-radius:8px;
+    font-size:13px;
+    font-weight:700;
+    cursor:pointer;
+  }
+  .steps-mini{
+    text-align:left;
+    font-size:12px;
+    color:var(--ink-soft);
+    background:#fff;
+    border-radius:8px;
+    padding:12px 14px;
+    margin-top:14px;
+    line-height:1.9;
+  }
+  .steps-mini b{color:var(--ink);}
+  .import-status{
+    margin-top:12px;
+    font-size:13px;
+    font-weight:700;
+  }
+  .import-status.ok{color:var(--green);}
+  .import-status.err{color:var(--red);}
+  .toast{
+    position:fixed;
+    bottom:96px;left:50%;
+    transform:translateX(-50%);
+    background:var(--ink);
+    color:#fff;
+    padding:10px 18px;
+    border-radius:20px;
+    font-size:13px;
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .25s, transform .25s;
+    z-index:60;
+    white-space:nowrap;
+  }
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(-6px);}
+  footer{
+    text-align:center;
+    font-size:10.5px;
+    color:var(--ink-soft);
+    margin-top:30px;
+    line-height:1.8;
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header>
+    <p class="app-title">PayPay家計カレンダー</p>
+    <p class="app-sub">お買い物の記録を、ひと目のカレンダーへ</p>
+  </header>
+
+  <div class="month-nav">
+    <button id="prevMonth">‹</button>
+    <div class="month-label" id="monthLabel">2026年7月</div>
+    <button id="nextMonth">›</button>
+  </div>
+
+  <div class="stamp-row">
+    <div class="stamp">
+      <div class="stamp-label">合計</div>
+      <div class="stamp-amount" id="monthTotal">¥0</div>
+    </div>
+    <div class="cat-breakdown" id="catBreakdown"></div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="calendar">カレンダー</button>
+    <button class="tab-btn" data-tab="import">CSV取込</button>
+  </div>
+
+  <div class="panel active" id="panel-calendar">
+    <div class="weekday-row">
+      <span>日</span><span>月</span><span>火</span><span>水</span><span>木</span><span>金</span><span>土</span>
+    </div>
+    <div class="cal-grid" id="calGrid"></div>
+  </div>
+
+  <div class="panel" id="panel-import">
+    <div class="import-box">
+      <p>PayPayアプリでダウンロードした取引履歴CSVを読み込むと、まとめてカレンダーに記録できます。</p>
+      <label class="file-label" for="csvFile">CSVファイルを選ぶ</label>
+      <input type="file" id="csvFile" accept=".csv,text/csv">
+      <div class="import-status" id="importStatus"></div>
+    </div>
+    <div class="steps-mini">
+      <b>PayPayでのCSVの出し方</b><br>
+      ① PayPayアプリのホーム上部「取引履歴」をタップ<br>
+      ② 画面右上の「取引履歴のダウンロード」をタップ<br>
+      ③ 期間を選んで「ダウンロード申請をする」をタップ<br>
+      ④ 通知が届いたら24時間以内に「ダウンロード」をタップして保存<br>
+      ⑤ 保存したファイルをこの画面で選択
+    </div>
+  </div>
+
+  <footer>
+    入力したデータはこの端末のアカウントに自動で保存されます。<br>
+    金額はPayPayアプリの利用履歴を見ながら手入力、またはCSV取込でまとめて記録できます。
+  </footer>
+</div>
+
+<button class="fab" id="fabAdd" title="今日の支出を記録">＋</button>
+
+<div class="overlay" id="overlay">
+  <div class="sheet">
+    <button class="close-btn" id="closeSheet">✕</button>
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">
+      <span id="sheetDate">7月1日（水）</span>
+      <span class="sheet-day-total" id="sheetDayTotal">¥0</span>
+    </div>
+
+    <div class="entry-list" id="entryList"></div>
+
+    <div class="add-form">
+      <div class="field">
+        <label>金額</label>
+        <input type="number" id="inputAmount" placeholder="例：1200" inputmode="numeric" min="0">
+      </div>
+      <div class="field">
+        <label>メモ（お店・内容など）</label>
+        <input type="text" id="inputMemo" placeholder="例：スーパーで食材">
+      </div>
+      <div class="field">
+        <label>カテゴリ</label>
+        <div class="cat-chips" id="catChips"></div>
+      </div>
+      <button class="submit-btn" id="submitEntry">この内容で記録する</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  const CATEGORIES = [
+    {key:'食費', color:'#E8002D'},
+    {key:'日用品', color:'#8B6F47'},
+    {key:'交通', color:'#9C93AE'},
+    {key:'娯楽', color:'#6E8C5E'},
+    {key:'衣類', color:'#B98A2E'},
+    {key:'その他', color:'#6B6B70'},
+  ];
+  const catColor = k => (CATEGORIES.find(c=>c.key===k)||CATEGORIES[5]).color;
+
+  const STORAGE_KEY = 'paypay-kakeibo-entries';
+  let entries = [];
+  let currentYear, currentMonth; // month: 0-11
+  let selectedDate = null;
+  let selectedCategory = '食費';
+
+  const todayStr = ()=> fmtDate(new Date());
+  function fmtDate(d){
+    const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), day=String(d.getDate()).padStart(2,'0');
+    return `${y}-${m}-${day}`;
+  }
+  function yen(n){ return '¥' + Math.round(n).toLocaleString('ja-JP'); }
+  function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+
+  async function loadEntries(){
+    try{
+      const res = await window.storage.get(STORAGE_KEY, false);
+      entries = res && res.value ? JSON.parse(res.value) : [];
+    }catch(e){
+      entries = [];
+    }
+  }
+  async function saveEntries(){
+    try{
+      await window.storage.set(STORAGE_KEY, JSON.stringify(entries), false);
+    }catch(e){
+      console.error('保存に失敗しました', e);
+      showToast('保存に失敗しました。もう一度お試しください');
+    }
+  }
+
+  function showToast(msg){
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(showToast._timer);
+    showToast._timer = setTimeout(()=> t.classList.remove('show'), 2200);
+  }
+
+  /* ---------- Calendar rendering ---------- */
+  function renderMonthLabel(){
+    document.getElementById('monthLabel').textContent = `${currentYear}年${currentMonth+1}月`;
+  }
+
+  function entriesForMonth(y,m){
+    const prefix = `${y}-${String(m+1).padStart(2,'0')}`;
+    return entries.filter(e=>e.date.startsWith(prefix));
+  }
+  function entriesForDate(dateStr){
+    return entries.filter(e=>e.date===dateStr);
+  }
+
+  function renderStamp(){
+    const monthEntries = entriesForMonth(currentYear, currentMonth);
+    const total = monthEntries.reduce((s,e)=>s+e.amount,0);
+    document.getElementById('monthTotal').textContent = yen(total);
+
+    const byCat = {};
+    monthEntries.forEach(e=>{ byCat[e.category] = (byCat[e.category]||0) + e.amount; });
+    const box = document.getElementById('catBreakdown');
+    box.innerHTML = '';
+    const cats = Object.entries(byCat).sort((a,b)=>b[1]-a[1]);
+    if(cats.length===0){
+      box.innerHTML = '<div class="cat-empty">まだ記録がありません</div>';
+      return;
+    }
+    const max = cats[0][1] || 1;
+    cats.slice(0,4).forEach(([cat,amt])=>{
+      const row = document.createElement('div');
+      row.className = 'cat-bar-row';
+      row.innerHTML = `
+        <span class="cat-dot" style="background:${catColor(cat)}"></span>
+        <span style="width:38px;flex-shrink:0;">${cat}</span>
+        <span class="cat-bar-track"><span class="cat-bar-fill" style="width:${(amt/max*100).toFixed(0)}%;background:${catColor(cat)}"></span></span>
+        <span class="cat-bar-amount">${yen(amt)}</span>
+      `;
+      box.appendChild(row);
+    });
+  }
+
+  function renderCalendar(){
+    renderMonthLabel();
+    renderStamp();
+    const grid = document.getElementById('calGrid');
+    grid.innerHTML = '';
+    const firstDay = new Date(currentYear, currentMonth, 1);
+    const startWeekday = firstDay.getDay();
+    const daysInMonth = new Date(currentYear, currentMonth+1, 0).getDate();
+    const today = todayStr();
+
+    for(let i=0;i<startWeekday;i++){
+      const blank = document.createElement('div');
+      blank.className = 'day-cell empty';
+      grid.appendChild(blank);
+    }
+    for(let d=1; d<=daysInMonth; d++){
+      const dateObj = new Date(currentYear, currentMonth, d);
+      const dateStr = fmtDate(dateObj);
+      const wd = dateObj.getDay();
+      const cell = document.createElement('div');
+      cell.className = 'day-cell' + (dateStr===today ? ' today':'') + (wd===0?' sun':'') + (wd===6?' sat':'');
+      const dayEntries = entriesForDate(dateStr);
+      const dayTotal = dayEntries.reduce((s,e)=>s+e.amount,0);
+      cell.innerHTML = `
+        <span class="day-num">${d}</span>
+        ${dayTotal>0 ? `<span class="day-total-tab">${yen(dayTotal)}</span>` : ''}
+      `;
+      cell.addEventListener('click', ()=> openSheet(dateStr));
+      grid.appendChild(cell);
+    }
+  }
+
+  /* ---------- Bottom sheet ---------- */
+  function buildCatChips(){
+    const wrap = document.getElementById('catChips');
+    wrap.innerHTML = '';
+    CATEGORIES.forEach(c=>{
+      const chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'chip' + (c.key===selectedCategory ? ' selected':'');
+      chip.innerHTML = `<span class="cat-dot" style="background:${c.color}"></span>${c.key}`;
+      chip.addEventListener('click', ()=>{
+        selectedCategory = c.key;
+        buildCatChips();
+      });
+      wrap.appendChild(chip);
+    });
+  }
+
+  function openSheet(dateStr){
+    selectedDate = dateStr;
+    const d = new Date(dateStr+'T00:00:00');
+    const wd = ['日','月','火','水','木','金','土'][d.getDay()];
+    document.getElementById('sheetDate').textContent = `${d.getMonth()+1}月${d.getDate()}日（${wd}）`;
+    renderEntryList();
+    document.getElementById('inputAmount').value='';
+    document.getElementById('inputMemo').value='';
+    selectedCategory = '食費';
+    buildCatChips();
+    document.getElementById('overlay').classList.add('active');
+  }
+  function closeSheet(){
+    document.getElementById('overlay').classList.remove('active');
+  }
+
+  function renderEntryList(){
+    const list = document.getElementById('entryList');
+    const dayEntries = entriesForDate(selectedDate);
+    const total = dayEntries.reduce((s,e)=>s+e.amount,0);
+    document.getElementById('sheetDayTotal').textContent = yen(total);
+    list.innerHTML = '';
+    if(dayEntries.length===0){
+      list.innerHTML = '<div class="empty-note">この日の記録はまだありません</div>';
+      return;
+    }
+    dayEntries.forEach(e=>{
+      const item = document.createElement('div');
+      item.className = 'entry-item';
+      item.innerHTML = `
+        <span class="entry-cat-dot" style="background:${catColor(e.category)}"></span>
+        <div class="entry-info">
+          <div class="entry-memo">${e.memo ? escapeHtml(e.memo) : '（メモなし）'}</div>
+          <div class="entry-cat">${e.category}</div>
+        </div>
+        <div class="entry-amount">${yen(e.amount)}</div>
+        <button class="entry-del" data-id="${e.id}">✕</button>
+      `;
+      item.querySelector('.entry-del').addEventListener('click', ()=> deleteEntry(e.id));
+      list.appendChild(item);
+    });
+  }
+
+  function escapeHtml(s){
+    return s.replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  async function deleteEntry(id){
+    entries = entries.filter(e=>e.id!==id);
+    await saveEntries();
+    renderEntryList();
+    renderCalendar();
+    showToast('削除しました');
+  }
+
+  async function submitEntry(){
+    const amountVal = document.getElementById('inputAmount').value;
+    const memoVal = document.getElementById('inputMemo').value.trim();
+    const amount = parseFloat(amountVal);
+    if(!amount || amount<=0){
+      showToast('金額を入力してください');
+      return;
+    }
+    entries.push({
+      id: uid(),
+      date: selectedDate,
+      amount: amount,
+      memo: memoVal,
+      category: selectedCategory
+    });
+    await saveEntries();
+    document.getElementById('inputAmount').value='';
+    document.getElementById('inputMemo').value='';
+    renderEntryList();
+    renderCalendar();
+    showToast('記録しました');
+  }
+
+  /* ---------- Tabs ---------- */
+  document.querySelectorAll('.tab-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+      document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('panel-'+btn.dataset.tab).classList.add('active');
+    });
+  });
+
+  /* ---------- Month nav ---------- */
+  document.getElementById('prevMonth').addEventListener('click', ()=>{
+    currentMonth--; if(currentMonth<0){currentMonth=11; currentYear--;}
+    renderCalendar();
+  });
+  document.getElementById('nextMonth').addEventListener('click', ()=>{
+    currentMonth++; if(currentMonth>11){currentMonth=0; currentYear++;}
+    renderCalendar();
+  });
+
+  document.getElementById('fabAdd').addEventListener('click', ()=> openSheet(todayStr()));
+  document.getElementById('closeSheet').addEventListener('click', closeSheet);
+  document.getElementById('overlay').addEventListener('click', (e)=>{ if(e.target.id==='overlay') closeSheet(); });
+  document.getElementById('submitEntry').addEventListener('click', submitEntry);
+
+  /* ---------- CSV Import ---------- */
+  function parseCsvLine(line){
+    const out = [];
+    let cur = '', inQuotes=false;
+    for(let i=0;i<line.length;i++){
+      const ch = line[i];
+      if(inQuotes){
+        if(ch === '"'){
+          if(line[i+1] === '"'){ cur+='"'; i++; } else { inQuotes=false; }
+        } else { cur += ch; }
+      } else {
+        if(ch === '"'){ inQuotes = true; }
+        else if(ch === ','){ out.push(cur); cur=''; }
+        else { cur += ch; }
+      }
+    }
+    out.push(cur);
+    return out;
+  }
+
+  function decodeBuffer(buf){
+    try{
+      const dec = new TextDecoder('utf-8', {fatal:true});
+      const text = dec.decode(buf);
+      if(text.charCodeAt(0)===0xFEFF) return text.slice(1);
+      return text;
+    }catch(e){
+      try{
+        return new TextDecoder('shift_jis').decode(buf);
+      }catch(e2){
+        return new TextDecoder('utf-8').decode(buf);
+      }
+    }
+  }
+
+  function findColIndex(headers, keywords){
+    for(let i=0;i<headers.length;i++){
+      const h = headers[i];
+      if(keywords.some(k=>h.includes(k))) return i;
+    }
+    return -1;
+  }
+
+  function parseDateCell(raw){
+    if(!raw) return null;
+    const m = raw.match(/(\d{4})[\/\-年](\d{1,2})[\/\-月](\d{1,2})/);
+    if(!m) return null;
+    const y=m[1], mo=String(m[2]).padStart(2,'0'), d=String(m[3]).padStart(2,'0');
+    return `${y}-${mo}-${d}`;
+  }
+  function parseAmountCell(raw){
+    if(!raw) return 0;
+    const cleaned = raw.replace(/[^\d.\-]/g,'');
+    const v = parseFloat(cleaned);
+    return isNaN(v) ? 0 : v;
+  }
+
+  document.getElementById('csvFile').addEventListener('change', async (ev)=>{
+    const file = ev.target.files[0];
+    const statusEl = document.getElementById('importStatus');
+    statusEl.className = 'import-status';
+    statusEl.textContent = '';
+    if(!file) return;
+    try{
+      const buf = await file.arrayBuffer();
+      const text = decodeBuffer(buf);
+      const lines = text.split(/\r\n|\n|\r/).filter(l=>l.trim().length>0);
+      if(lines.length < 2){
+        throw new Error('empty');
+      }
+      const headers = parseCsvLine(lines[0]);
+      const dateIdx = findColIndex(headers, ['取引日','日時','日付']);
+      const outIdx = findColIndex(headers, ['出金']);
+      const descIdx = findColIndex(headers, ['取引先','取引詳細','取引内容','内容','摘要']);
+
+      if(dateIdx === -1 || outIdx === -1){
+        statusEl.classList.add('err');
+        statusEl.textContent = 'このCSVの形式を認識できませんでした。手入力をお試しください。';
+        return;
+      }
+
+      let added = 0;
+      for(let i=1;i<lines.length;i++){
+        const row = parseCsvLine(lines[i]);
+        const dateStr = parseDateCell(row[dateIdx]);
+        const amount = parseAmountCell(row[outIdx]);
+        if(!dateStr || !amount || amount<=0) continue;
+        const memo = descIdx>=0 ? (row[descIdx]||'').trim() : '';
+        entries.push({
+          id: uid(),
+          date: dateStr,
+          amount: amount,
+          memo: memo,
+          category: 'その他'
+        });
+        added++;
+      }
+      if(added===0){
+        statusEl.classList.add('err');
+        statusEl.textContent = '支出データが見つかりませんでした。入金や無効な行のみの可能性があります。';
+        return;
+      }
+      await saveEntries();
+      statusEl.classList.add('ok');
+      statusEl.textContent = `${added}件の支出を取り込みました。カレンダーで確認できます（カテゴリは「その他」で登録されています。各日をタップして自由に編集してください）。`;
+      renderCalendar();
+      showToast(`${added}件を取り込みました`);
+    }catch(err){
+      console.error(err);
+      statusEl.classList.add('err');
+      statusEl.textContent = '読み込みに失敗しました。CSVファイルを確認してください。';
+    }
+    ev.target.value = '';
+  });
+
+  /* ---------- Init ---------- */
+  async function init(){
+    const now = new Date();
+    currentYear = now.getFullYear();
+    currentMonth = now.getMonth();
+    await loadEntries();
+    renderCalendar();
+  }
+  init();
+})();
+</script>
+</body>
+</html>
